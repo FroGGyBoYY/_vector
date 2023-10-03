@@ -70,7 +70,7 @@ private:
 public:
 	_vector() :v_size(0),v_cap(0), arr(nullptr) {}
 	_vector(size_t size) :v_size(size), v_cap(size), arr(reinterpret_cast<T*>(new uint8_t[v_cap * sizeof(T)])) {
-		for (int i = 0; i < v_size; ++i) {
+		for (size_t i = 0; i < v_size; ++i) {
 			arr[i] = T();
 		}
 	}
@@ -135,10 +135,16 @@ public:
 		return v_cap;
 	}
 
-	void resize(size_t n) {
+	void resize(size_t n, const T& value) {
+		if (n > v_cap)reserve(n);
 		if (n < v_size) {
-			for (int i = n; i < v_size; ++i) {
+			for (size_t i = n; i < v_size; ++i) {
 				arr[i]->~T();
+			}
+		}
+		else {
+			for (size_t i = v_size; i < n; ++i) {
+				new(arr + i)T(value);
 			}
 		}
 	}
@@ -147,33 +153,50 @@ public:
 		if (n <= v_cap)return;
 
 		T* newarr = reinterpret_cast<T*>(new uint8_t[n * sizeof(T)]);
-
 		size_t i = 0;
 		try {
-			for (; i < n; ++i) {
-				new(newarr + i) T(arr[i]);;;
-			}
+			std::uninitialized_copy(arr, arr + v_size, newarr);
 		}
 		catch (...) {
-			for (int j = 0; j < i; ++j) {
-				(newarr + j)->~T();
-			}
-			delete[] newarr;
+			delete[]	reinterpret_cast<uint8_t*>(newarr);
+			throw;
 		}
 
-		for (int i = 0; i < v_size; ++i) {
+		for (size_t i = 0; i < v_size; ++i) {
 			(arr + i)->~T();
 		}
-		delete[]arr;
+		delete[]	reinterpret_cast<uint8_t*>(arr);
 		arr = newarr;
 	}
 
+	void push_back(const T& value) {
+		if (v_size == v_cap)resize(2 * v_cap);
+		new(arr + v_size)T(value);
+		++v_size;
+	}
+	void pop_back() {
+		(arr + v_size - 1u)->~T();
+		--v_size;
+	}
+
+	T& operator[](const size_t n) {
+		return *(arr + n);
+	}
+	const T& operator[](const size_t n)const {
+		return *(arr + n);
+	}
+
 	~_vector() { 
-		for (int i = 0; i < v_size; ++i) {
+		for (size_t i = 0; i < v_size; ++i) {
 			(arr + i)->~T();
 		}
 		delete[]arr; 
 	}
+};
+
+template <>
+class _vector<bool> {
+
 };
 
 int main() {
