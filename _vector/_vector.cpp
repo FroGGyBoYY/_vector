@@ -2,18 +2,28 @@
 #include<vector>
 #include<iterator>
 
-template<typename Iterator, typename IteratorCategory>
-void my_advance_helper(Iterator& iter, int n, IteratorCategory) {
-	for (int i = 0; i < n; ++i, ++iter);
-}
-template<typename Iterator>
-void my_advance_helper(Iterator& iter, int n, std::random_access_iterator_tag) {
-	iter += n;
+//-------------------------------
+template <typename Iterator>
+void my_advance(Iterator& iter, int n) {
+	if constexpr (std::is_same<typename std::iterator_traits<Iterator>::iterator_category, typename std::random_access_iterator_tag>::value) {
+		iter += n;
+	}
+	else {
+		if (n < 0) { for (int i = 0; i < n; ++i, --iter); }
+		else { for (int i = 0; i < n; ++i, ++iter); }
+	}
 }
 
 template<typename Iterator>
-void my_advance(Iterator& iter, int n) {
-	my_advance_helper(iter, n, std::iterator_traits<Iterator>::iterator_category());
+size_t my_distance(Iterator& first_it, const Iterator& second_it) {
+	if constexpr (std::is_same<typename std::iterator_traits<Iterator>::iterator_category, typename std::random_access_iterator_tag>::value) {
+		return second_it - first_it;
+	}
+	else {
+		size_t result = 0;
+		for (; first_it != second_it; ++result, ++first_it);
+		return result;
+	}
 }
 
 
@@ -60,6 +70,42 @@ public:
 	}
 	Iterator base() const { return iter; }
 };
+
+//OUTPUT iterartors
+template<typename Container>
+class Back_Insert_Iterator {
+private:
+	Container& container;
+public:
+	explicit Back_Insert_Iterator(Container& _container) :container(_container) {}
+	Back_Insert_Iterator<Container>& operator++() noexcept {
+		return *this;
+	}
+	Back_Insert_Iterator<Container> operator++(int) noexcept {
+		Back_Insert_Iterator<Container> copy = *this;
+		return copy;
+	}
+	Back_Insert_Iterator<Container>& operator*() noexcept {
+		return *this;
+	}
+	Back_Insert_Iterator<Container>& operator=(const typename Container::value_type& item) {
+		container.push_back(item);
+		return *this;
+	}
+	Back_Insert_Iterator<Container>& operator=(const typename Container::value_type&& item) {
+		container.push_back(std::move(item));
+		return *this;
+	}
+	Back_Insert_Iterator<Container>& operator=(const Back_Insert_Iterator<Container>& b_iter) {
+		container = b_iter.container;
+		return *this;
+	}
+};
+template<typename Container>
+Back_Insert_Iterator<Container> Back_Inserter(Container& container) {
+	return Back_Insert_Iterator<Container>(container);
+}
+
 
 template <typename T>
 class _vector {
