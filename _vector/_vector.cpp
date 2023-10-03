@@ -64,16 +64,18 @@ public:
 template <typename T>
 class _vector {
 private:
-	size_t size;
+	size_t v_size;
+	size_t v_cap;
 	T* arr;
 public:
-	_vector() :size(0), arr(nullptr) {}
-	_vector(size_t size) :size(size), arr(new T[size]) {
-		for (int i = 0; i < size; ++i) {
+	_vector() :v_size(0),v_cap(0), arr(nullptr) {}
+	_vector(size_t size) :v_size(size), v_cap(size), arr(reinterpret_cast<T*>(new uint8_t[v_cap * sizeof(T)])) {
+		for (int i = 0; i < v_size; ++i) {
 			arr[i] = T();
 		}
 	}
-	_vector(const std::initializer_list<T>& lst) :size(lst.size()), arr(new T[size]) {
+	_vector(const std::initializer_list<T>& lst) :v_size(lst.size()),v_cap(lst.size()), 
+													arr(reinterpret_cast<T*>(new uint8_t[v_cap*sizeof(T)])) {
 		std::copy(lst.begin(), lst.end(), arr);
 	}
 
@@ -116,19 +118,62 @@ public:
 	using Const_Iterator = Common_Iterator<true>;
 
 	Iterator begin() const noexcept { return arr; }
-	Iterator end() const noexcept { return (arr + size); }
+	Iterator end() const noexcept { return (arr + v_size); }
 	Const_Iterator cbegin() const noexcept { return arr; }
-	Const_Iterator cend() const noexcept { return (arr + size); }
+	Const_Iterator cend() const noexcept { return (arr + v_size); }
 
 	using Reverse_Iterator = _Reverse_Iterator<Iterator>;
 	using Const_Reverse_Iterator = _Reverse_Iterator<Const_Iterator>;
 
-	Reverse_Iterator rbegin() const noexcept { return Reverse_Iterator((arr + size - 1)); }
-	Reverse_Iterator rend() const noexcept { return Reverse_Iterator(std::prev(arr, 1)); }
+	Reverse_Iterator rbegin() const noexcept { return Reverse_Iterator((arr + v_size - 1u)); }
+	Reverse_Iterator rend() const noexcept { return Reverse_Iterator(std::prev(arr, 1u)); }
 
+	size_t size() const {
+		return v_size;
+	}
+	size_t v_capasity() {
+		return v_cap;
+	}
 
+	void resize(size_t n) {
+		if (n < v_size) {
+			for (int i = n; i < v_size; ++i) {
+				arr[i]->~T();
+			}
+		}
+	}
 
-	~_vector() { delete[]arr; }
+	void reserve(size_t n) {
+		if (n <= v_cap)return;
+
+		T* newarr = reinterpret_cast<T*>(new uint8_t[n * sizeof(T)]);
+
+		size_t i = 0;
+		try {
+			for (; i < n; ++i) {
+				new(newarr + i) T(arr[i]);;;
+			}
+		}
+		catch (...) {
+			for (int j = 0; j < i; ++j) {
+				(newarr + j)->~T();
+			}
+			delete[] newarr;
+		}
+
+		for (int i = 0; i < v_size; ++i) {
+			(arr + i)->~T();
+		}
+		delete[]arr;
+		arr = newarr;
+	}
+
+	~_vector() { 
+		for (int i = 0; i < v_size; ++i) {
+			(arr + i)->~T();
+		}
+		delete[]arr; 
+	}
 };
 
 int main() {
@@ -142,7 +187,7 @@ int main() {
 		std::cout << it << ' ';
 	}
 	
-
+ 
 	// 3.2 Trying and testing my 
 	// container with iterators
 
