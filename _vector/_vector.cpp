@@ -1,7 +1,7 @@
 ﻿#include<iostream>
 #include<vector>
 #include<iterator>
-
+#include <string>
 //	std::advance implementation
 template <typename Iterator>
 void my_advance(Iterator& iter, int n) {
@@ -197,17 +197,17 @@ public:
 	size_type size() const {
 		return v_size;
 	}
-	size_type v_capasity() {
+	size_type capasity() {
 		return v_cap;
 	}
 
-	void resize(size_type n, const TypeElem& value) {
+	void resize(size_type n, const TypeElem& value = TypeElem()) {
 		if (n > v_cap) {
 			reserve(n);
 		}
 		if (n < v_size) {
 			for (size_type i = n; i < v_size; ++i) {
-				arr[i]->~TypeElem();
+				arr[i].~TypeElem();
 			}
 		}
 		else {
@@ -215,6 +215,7 @@ public:
 				new(arr + i)TypeElem(value);
 			}
 		}
+		//v_size = n;
 	}
 
 	void reserve(size_type n) {
@@ -236,11 +237,12 @@ public:
 		}
 		delete[]	reinterpret_cast<uint8_t*>(arr);
 		arr = newarr;
+		v_cap = n;
 	}
 
 	void push_back(const TypeElem& value) {
 		if (v_size == v_cap) {
-			resize(2 * v_cap);
+			resize(2 * v_cap + 1u);
 		}
 		new(arr + v_size)TypeElem(value);
 		++v_size;
@@ -275,7 +277,8 @@ public:
 		for (size_type i = 0; i < v_size; ++i) {
 			(arr + i)->~TypeElem();
 		}
-		delete[]arr;
+		//delete[]arr;
+		delete[] reinterpret_cast<uint8_t*>(arr);
 	}
 private:
 	size_type v_size;
@@ -289,17 +292,6 @@ class _vector<bool> {
 };
 
 int main() {
-
-	std::vector<int>v = { 1,2,3,4,5 };
-	for (std::vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
-		std::cout << *it << ' ';
-	}
-	std::cout << std::endl;
-	for (auto it : v) {
-		std::cout << it << ' ';
-	}
-
-
 	// 3.2 Trying and testing my 
 	// container with iterators
 	std::cout << "\n\nTry show my_vec with Iterators" << std::endl;
@@ -311,6 +303,22 @@ int main() {
 	std::cout << "\n\nTry show my_vec with Reverse_Iterators" << std::endl;
 	for (_vector<int>::Reverse_Iterator r_it = my_vec.rbegin(); r_it != my_vec.rend(); ++r_it) {
 		std::cout << *r_it << ' ';
+	}std::cout << std::endl;
+	/*std::vector<int>v;
+	for (int i = 0; i < 10; ++i) {
+		v.push_back(i);
+		std::cout << v.size() << ' ' << v.capacity() << std::endl;;
 	}
+	*/
+	
+	_vector<std::string> v_str;
+	for (int i = 0; i < 10; ++i) {
+		v_str.push_back(std::to_string(i));
+		std::cout << v_str.size() << ' ' << v_str.capasity() << std::endl;
+	}
+	for (auto x : v_str) {
+		std::cout << x << ' ';
+	}
+
 	return 0;
 }
