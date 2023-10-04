@@ -108,31 +108,34 @@ Back_Insert_Iterator<Container> Back_Inserter(Container& container) {
 }
 
 
-template <typename T>
+template <typename TypeElem>
 class _vector {
-private:
-	size_t v_size;
-	size_t v_cap;
-	T* arr;
 public:
-	_vector() :v_size(0),v_cap(0), arr(nullptr) {}
-	_vector(size_t size) :v_size(size), v_cap(size), arr(reinterpret_cast<T*>(new uint8_t[v_cap * sizeof(T)])) {
-		for (size_t i = 0; i < v_size; ++i) {
-			arr[i] = T();
+	using iterator_category = std::random_access_iterator_tag;
+	using size_type			= size_t;
+	using value_type		= TypeElem;
+	using difference_type	= int;
+	using reference			= value_type&;
+	using const_reference	= const value_type&;
+
+	_vector() :v_size(0), v_cap(0), arr(nullptr) {}
+	_vector(size_type size) :v_size(size), v_cap(size), arr(reinterpret_cast<TypeElem*>(new uint8_t[v_cap * sizeof(TypeElem)])) {
+		for (size_type i = 0; i < v_size; ++i) {
+			arr[i] = TypeElem();
 		}
 	}
-	_vector(const std::initializer_list<T>& lst) :v_size(lst.size()),v_cap(lst.size()), 
-													arr(reinterpret_cast<T*>(new uint8_t[v_cap*sizeof(T)])) {
+	_vector(const std::initializer_list<TypeElem>& lst) :v_size(lst.size()), v_cap(lst.size()),
+		arr(reinterpret_cast<TypeElem*>(new uint8_t[v_cap * sizeof(TypeElem)])) {
 		std::copy(lst.begin(), lst.end(), arr);
 	}
 
 	template <bool IsConst>
 	struct Common_Iterator {
 	private:
-		std::conditional_t<IsConst, const T*, T*> ptr_elem;
+		std::conditional_t<IsConst, const TypeElem*, TypeElem*> ptr_elem;
 	public:
 		Common_Iterator() :ptr_elem(nullptr) {}
-		Common_Iterator(T* ptr) :ptr_elem(ptr) {}
+		Common_Iterator(TypeElem* ptr) :ptr_elem(ptr) {}
 		Common_Iterator& operator++() {
 			++ptr_elem;
 			return *this;
@@ -157,8 +160,8 @@ public:
 		bool operator !=(const Common_Iterator& it)const noexcept {
 			return !(*this == it);
 		}
-		std::conditional_t<IsConst, const T&, T&> operator*() { return *ptr_elem; }
-		std::conditional_t<IsConst, const T*, T*> operator->() { return ptr_elem; }
+		std::conditional_t<IsConst, const TypeElem&, TypeElem&> operator*() { return *ptr_elem; }
+		std::conditional_t<IsConst, const TypeElem*, TypeElem*> operator->() { return ptr_elem; }
 	};
 
 	using Iterator = Common_Iterator<false>;
@@ -166,39 +169,60 @@ public:
 	using Reverse_Iterator = _Reverse_Iterator<Iterator>;
 	using Const_Reverse_Iterator = _Reverse_Iterator<Const_Iterator>;
 
-	Iterator begin() const noexcept { return arr; }
-	Iterator end() const noexcept { return (arr + v_size); }
-	Const_Iterator cbegin() const noexcept { return arr; }
-	Const_Iterator cend() const noexcept { return (arr + v_size); }
-	Reverse_Iterator rbegin() const noexcept { return Reverse_Iterator((arr + v_size - 1u)); }
-	Reverse_Iterator rend() const noexcept { return Reverse_Iterator(std::prev(arr, 1u)); }
+	Iterator begin() const noexcept { 
+		return arr; 
+	}
+	Iterator end() const noexcept {
+		return (arr + v_size); 
+	}
+	Const_Iterator cbegin() const noexcept {
+		return arr;
+	}
+	Const_Iterator cend() const noexcept {
+		return (arr + v_size); 
+	}
+	Reverse_Iterator rbegin() const noexcept { 
+		return Reverse_Iterator((arr + v_size - 1u)); 
+	}
+	Reverse_Iterator rend() const noexcept { 
+		return Reverse_Iterator(std::prev(arr, 1u));
+	}
+	Const_Reverse_Iterator crbegin() const noexcept {
+		return Const_Reverse_Iterator((arr + v_size - 1u));
+	}
+	Const_Reverse_Iterator crend() const noexcept {
+		return Const_Reverse_Iterator(std::prev(arr, 1u));
+	}
 
-	size_t size() const {
+	size_type size() const {
 		return v_size;
 	}
-	size_t v_capasity() {
+	size_type v_capasity() {
 		return v_cap;
 	}
 
-	void resize(size_t n, const T& value) {
-		if (n > v_cap)reserve(n);
+	void resize(size_type n, const TypeElem& value) {
+		if (n > v_cap) {
+			reserve(n);
+		}
 		if (n < v_size) {
-			for (size_t i = n; i < v_size; ++i) {
-				arr[i]->~T();
+			for (size_type i = n; i < v_size; ++i) {
+				arr[i]->~TypeElem();
 			}
 		}
 		else {
-			for (size_t i = v_size; i < n; ++i) {
-				new(arr + i)T(value);
+			for (size_type i = v_size; i < n; ++i) {
+				new(arr + i)TypeElem(value);
 			}
 		}
 	}
 
-	void reserve(size_t n) {
-		if (n <= v_cap)return;
-
-		T* newarr = reinterpret_cast<T*>(new uint8_t[n * sizeof(T)]);
-		size_t i = 0;
+	void reserve(size_type n) {
+		if (n <= v_cap) {
+			return;
+		}
+		TypeElem* newarr = reinterpret_cast<TypeElem*>(new uint8_t[n * sizeof(TypeElem)]);
+		size_type i = 0;
 		try {
 			std::uninitialized_copy(arr, arr + v_size, newarr);
 		}
@@ -207,50 +231,56 @@ public:
 			throw;
 		}
 
-		for (size_t i = 0; i < v_size; ++i) {
-			(arr + i)->~T();
+		for (size_type i = 0; i < v_size; ++i) {
+			(arr + i)->~TypeElem();
 		}
 		delete[]	reinterpret_cast<uint8_t*>(arr);
 		arr = newarr;
 	}
 
-	void push_back(const T& value) {
-		if (v_size == v_cap)resize(2 * v_cap);
-		new(arr + v_size)T(value);
+	void push_back(const TypeElem& value) {
+		if (v_size == v_cap) {
+			resize(2 * v_cap);
+		}
+		new(arr + v_size)TypeElem(value);
 		++v_size;
 	}
 	void pop_back() {
-		(arr + v_size - 1u)->~T();
+		(arr + v_size - 1u)->~TypeElem();
 		--v_size;
 	}
 
-	T& operator[](const size_t n) {
+	TypeElem& operator[](const size_type n) {
 		return *(arr + n);
 	}
-	const T& operator[](const size_t n)const {
+	const TypeElem& operator[](const size_type n)const {
 		return *(arr + n);
 	}
 
-	T& font() {
+	TypeElem& font() {
 		return *(arr);
 	}
-	const T& font()const {
+	const TypeElem& font()const {
 		return *(arr);
 	}
 
-	T& back() {
+	TypeElem& back() {
 		return *(arr + v_size - 1u);
 	}
-	const T& back()const {
+	const TypeElem& back()const {
 		return *(arr + v_size - 1u);
 	}
 
-	~_vector() { 
-		for (size_t i = 0; i < v_size; ++i) {
-			(arr + i)->~T();
+	~_vector() {
+		for (size_type i = 0; i < v_size; ++i) {
+			(arr + i)->~TypeElem();
 		}
-		delete[]arr; 
+		delete[]arr;
 	}
+private:
+	size_type v_size;
+	size_type v_cap;
+	TypeElem* arr;
 };
 
 template <>
@@ -259,7 +289,7 @@ class _vector<bool> {
 };
 
 int main() {
-	
+
 	std::vector<int>v = { 1,2,3,4,5 };
 	for (std::vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
 		std::cout << *it << ' ';
@@ -268,18 +298,17 @@ int main() {
 	for (auto it : v) {
 		std::cout << it << ' ';
 	}
-	
- 
+
+
 	// 3.2 Trying and testing my 
 	// container with iterators
-
-	std::cout << "\n\n\t Try show my_vec with Iterators\n" << std::endl;
-	_vector<int> my_vec{ 1,2,3,4,5,6,7,8,9,10,11,12 };
+	std::cout << "\n\nTry show my_vec with Iterators" << std::endl;
+	_vector<int> my_vec{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ,11, 12 };
 	for (_vector<int>::Iterator it = my_vec.begin(); it != my_vec.end(); ++it) {
 		std::cout << *it << ' ';
 	}
 
-	std::cout << "\n\n\t Try show my_vec with Reverse_Iterators\n" << std::endl;
+	std::cout << "\n\nTry show my_vec with Reverse_Iterators" << std::endl;
 	for (_vector<int>::Reverse_Iterator r_it = my_vec.rbegin(); r_it != my_vec.rend(); ++r_it) {
 		std::cout << *r_it << ' ';
 	}
