@@ -2,7 +2,7 @@
 #include<vector>
 #include<iterator>
 
-//-------------------------------
+//	std::advance implementation
 template <typename Iterator>
 void my_advance(Iterator& iter, int n) {
 	if constexpr (std::is_same<typename std::iterator_traits<Iterator>::iterator_category, typename std::random_access_iterator_tag>::value) {
@@ -14,6 +14,7 @@ void my_advance(Iterator& iter, int n) {
 	}
 }
 
+//	std::distance implementation
 template<typename Iterator>
 size_t my_distance(Iterator& first_it, const Iterator& second_it) {
 	if constexpr (std::is_same<typename std::iterator_traits<Iterator>::iterator_category, typename std::random_access_iterator_tag>::value) {
@@ -162,15 +163,13 @@ public:
 
 	using Iterator = Common_Iterator<false>;
 	using Const_Iterator = Common_Iterator<true>;
+	using Reverse_Iterator = _Reverse_Iterator<Iterator>;
+	using Const_Reverse_Iterator = _Reverse_Iterator<Const_Iterator>;
 
 	Iterator begin() const noexcept { return arr; }
 	Iterator end() const noexcept { return (arr + v_size); }
 	Const_Iterator cbegin() const noexcept { return arr; }
 	Const_Iterator cend() const noexcept { return (arr + v_size); }
-
-	using Reverse_Iterator = _Reverse_Iterator<Iterator>;
-	using Const_Reverse_Iterator = _Reverse_Iterator<Const_Iterator>;
-
 	Reverse_Iterator rbegin() const noexcept { return Reverse_Iterator((arr + v_size - 1u)); }
 	Reverse_Iterator rend() const noexcept { return Reverse_Iterator(std::prev(arr, 1u)); }
 
@@ -230,6 +229,20 @@ public:
 	}
 	const T& operator[](const size_t n)const {
 		return *(arr + n);
+	}
+
+	T& font() {
+		return *(arr);
+	}
+	const T& font()const {
+		return *(arr);
+	}
+
+	T& back() {
+		return *(arr + v_size - 1u);
+	}
+	const T& back()const {
+		return *(arr + v_size - 1u);
 	}
 
 	~_vector() { 
