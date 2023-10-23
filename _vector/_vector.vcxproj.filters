@@ -18,9 +18,15 @@
     <ClCompile Include="_vector.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="_allocator_.cpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="_vector.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="_allocator_.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

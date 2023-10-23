@@ -143,9 +143,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="_allocator_.cpp" />
     <ClCompile Include="_vector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="_allocator_.h" />
     <ClInclude Include="_vector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
