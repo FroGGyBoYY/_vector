@@ -118,15 +118,16 @@ template <typename TypeElem, typename Alloc = std::allocator<TypeElem>>
 class _vector {
 public:
 	using iterator_category = std::random_access_iterator_tag;
-	using size_type = size_t;
-	using value_type = TypeElem;
-	using difference_type = int;
-	using reference = value_type&;
-	using const_reference = const value_type&;
-	using _myalloc = std::allocator_traits<std::allocator<TypeElem>>;
+	using size_type			= size_t;
+	using value_type		= TypeElem;
+	using difference_type	= int;
+	using reference			= value_type&;
+	using const_reference	= const value_type&;
+	using _myalloc			= std::allocator_traits<std::allocator<TypeElem>>;
 
 	_vector() :v_size(0), v_cap(0), arr(nullptr) {}
-	_vector(size_type size, const TypeElem& value = TypeElem()) :v_size(size),v_cap(size), alloc(Alloc()),/*  arr(alloc.allocate(size))*/arr(_myalloc::allocate(alloc, size)) {
+	_vector(size_type size, const TypeElem& value = TypeElem()) :v_size(size),
+			v_cap(size), alloc(Alloc()),/*  arr(alloc.allocate(size))*/arr(_myalloc::allocate(alloc, size)) {
 		for (size_type i = 0; i < v_size; ++i) {
 			//construct
 			_myalloc::construct(alloc, arr+i, TypeElem(value));
@@ -134,7 +135,7 @@ public:
 		}
 	}
 	_vector(const std::initializer_list<TypeElem>& lst) :v_size(lst.size()),
-			v_cap(lst.size()),alloc(Alloc()), arr(_myalloc::allocate(alloc,size))	{
+			v_cap(lst.size()), alloc(Alloc()), arr(_myalloc::allocate(alloc, size)) {
 		std::copy(lst.begin(), lst.end(), arr);
 	}
 
@@ -216,12 +217,14 @@ public:
 		}
 		if (n < v_size) {
 			for (size_type i = n; i < v_size; ++i) {
-				arr[i].~TypeElem();
+				//arr[i]->~TypeElem();
+				_myalloc::destroy(alloc, arr + i);
 			}
 		}
 		else {
 			for (size_type i = v_size; i < n; ++i) {
-				new(arr + i)TypeElem(value);
+				//new(arr + i)TypeElem(value);
+				_myalloc::construct(alloc, arr + i, value);
 			}
 		}
 		//v_size = n;
