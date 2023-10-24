@@ -5,7 +5,6 @@
 #include <string>
 #include "_allocator_.h"
 
-Allocator<int> alloc;
 /*
 //	std::advance implementation
 template <typename Iterator>
@@ -114,6 +113,7 @@ Back_Insert_Iterator<Container> Back_Inserter(Container& container) {
 /*
 ============================================================
 */
+
 template <typename TypeElem, typename Alloc = std::allocator<TypeElem>>
 class _vector {
 public:
@@ -123,18 +123,18 @@ public:
 	using difference_type = int;
 	using reference = value_type&;
 	using const_reference = const value_type&;
-	using _myalloc = std::allocator_traits<Alloc>;
+	using _myalloc = std::allocator_traits<std::allocator<TypeElem>>;
 
-	_vector() :v_size(0), v_cap(0), alloc(std::allocator<TypeElem>) arr(nullptr) {}
-	_vector(size_type size, const TypeElem& value = TypeElem(), const Alloc& alloc = Alloc()) :v_size(size),
-			v_cap(size), alloc(alloc), arr(_myalloc::allocate(alloc, v_cap)) {
+	_vector() :v_size(0), v_cap(0), arr(nullptr) {}
+	_vector(size_type size, const TypeElem& value = TypeElem()) :v_size(size),v_cap(size), alloc(Alloc()),/*  arr(alloc.allocate(size))*/arr(_myalloc::allocate(alloc, size)) {
 		for (size_type i = 0; i < v_size; ++i) {
 			//construct
-			arr[i] = value;
+			_myalloc::construct(alloc, arr+i, TypeElem(value));
+			//arr[i] = value;
 		}
 	}
-	_vector(const std::initializer_list<TypeElem>& lst, const Alloc& alloc = Alloc()) :v_size(lst.size()),
-			v_cap(lst.size()), arr(_myalloc::allocate(alloc,v_cap))	{
+	_vector(const std::initializer_list<TypeElem>& lst) :v_size(lst.size()),
+			v_cap(lst.size()),alloc(Alloc()), arr(_myalloc::allocate(alloc,size))	{
 		std::copy(lst.begin(), lst.end(), arr);
 	}
 
@@ -231,20 +231,37 @@ public:
 		if (n <= v_cap) {
 			return;
 		}
-		TypeElem* newarr = reinterpret_cast<TypeElem*>(new uint8_t[n * sizeof(TypeElem)]);
+		//TypeElem* newarr = reinterpret_cast<TypeElem*>(new uint8_t[n * sizeof(TypeElem)]);
+		TypeElem* newarr = _myalloc::allocate(alloc, n);
+
+		/*
 		size_type i = 0;
 		try {
 			std::uninitialized_copy(arr, arr + v_size, newarr);
 		}
 		catch (...) {
-			delete[]	reinterpret_cast<uint8_t*>(newarr);
+			//delete[]	reinterpret_cast<uint8_t*>(newarr);
 			throw;
 		}
-
-		for (size_type i = 0; i < v_size; ++i) {
-			(arr + i)->~TypeElem();
+		*/
+		size_type i = 0;
+		try {
+			for (; i < v_size; ++i) {
+				_myalloc::construct(alloc, newarr + i, arr[i]);
+			}
 		}
-		delete[]	reinterpret_cast<uint8_t*>(arr);
+		catch (...) {
+			for (size_t j = 0; j < i; ++j) {
+				_myalloc::destroy(alloc, newarr + j);
+			}
+			throw;
+		}
+		for (size_type i = 0; i < v_size; ++i) {
+			//(arr + i)->~TypeElem();
+			_myalloc::destroy(alloc, arr + i);
+		}
+		//delete[]	reinterpret_cast<uint8_t*>(arr);
+		_myalloc::deallocate(alloc, arr,v_cap);
 		arr = newarr;
 		v_cap = n;
 	}
@@ -253,11 +270,13 @@ public:
 		if (v_size == v_cap) {
 			resize(2 * v_cap + 1u);
 		}
-		new(arr + v_size)TypeElem(value);
+		//new(arr + v_size)TypeElem(value);
+		_myalloc::construct(alloc, arr + v_size, TypeElem(value));
 		++v_size;
 	}
 	void pop_back() {
-		(arr + v_size - 1u)->~TypeElem();
+		//(arr + v_size - 1u)->~TypeElem();
+		_myalloc::destroy(alloc, arr + v_size - 1u);
 		--v_size;
 	}
 
@@ -284,10 +303,12 @@ public:
 
 	~_vector() {
 		for (size_type i = 0; i < v_size; ++i) {
-			(arr + i)->~TypeElem();
+			//(arr + i)->~TypeElem();
+			_myalloc::destroy(alloc, arr + i);
 		}
 		//delete[]arr;
-		delete[] reinterpret_cast<uint8_t*>(arr);
+		//delete[] reinterpret_cast<uint8_t*>(arr);
+		_myalloc::deallocate(alloc, arr,v_cap);
 	}
 private:
 	size_type v_size;
@@ -302,32 +323,16 @@ class _vector<bool> {
 };
 
 int main() {
-	// 3.2 Trying and testing my 
-	// container with iterators
-	std::cout << "\n\nTry show my_vec with Iterators" << std::endl;
-	_vector<int> my_vec{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ,11, 12 };
-	for (_vector<int>::Iterator it = my_vec.begin(); it != my_vec.end(); ++it) {
-		std::cout << *it << ' ';
-	}
+	
+	std::allocator<std::string>all;
 
-	std::cout << "\n\nTry show my_vec with Reverse_Iterators" << std::endl;
-	for (_vector<int>::Reverse_Iterator r_it = my_vec.rbegin(); r_it != my_vec.rend(); ++r_it) {
-		std::cout << *r_it << ' ';
-	}std::cout << std::endl;
-	/*std::vector<int>v;
-	for (int i = 0; i < 10; ++i) {
-		v.push_back(i);
-		std::cout << v.size() << ' ' << v.capacity() << std::endl;;
-	}
-	*/
-
-	_vector<std::string> v_str;
-	for (int i = 0; i < 10; ++i) {
-		v_str.push_back(std::to_string(i));
-		std::cout << v_str.size() << ' ' << v_str.capasity() << std::endl;
-	}
-	for (auto x : v_str) {
+	_vector<int>v(5,0);
+	v.reserve(20);
+	v.push_back(5);
+	for (auto x : v) {
 		std::cout << x << ' ';
 	}
+	std::cout << '\n';
 	return 0;
+	
 }
